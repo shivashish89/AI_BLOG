@@ -28,15 +28,20 @@ transformation: [
 ]
 });
 const image=optimizedImageUrl;
-await Blog.create({title,subTitle,description,category,image,isPublished})
+await Blog.create({title,subTitle,description,category,image,isPublished, author : req.user.id})
+
+// console.log("req.user in addBlog:", req.user);
+console.log("Blog created with author:", req.user.id);
 res.json({success:true, message: "Blog added successfully"})
+
 } catch (error) {
    res. json({success:false, message:error.message})
 }
 }
+
 export const getAllBlogs = async (req, res)=>{
 try {
-const blogs = await Blog. find( {isPublished: true} )
+const blogs = await Blog.find({ isPublished: true }).populate("author", "name email");
 res. json({success: true, blogs} )
 } catch (error) {
 res. json({success: false, message: error . message})
@@ -45,7 +50,8 @@ res. json({success: false, message: error . message})
 export const getBlogById = async (req, res) =>{
 try {
 const {blogId} = req.params;
-const blog = await Blog.findById(blogId)
+const blog = await Blog.findById(blogId).populate("author", "name email");
+// console.log(blog);
 if(!blog){
 return res.json({ success: false, message: "Blog not found" });
 } 
@@ -110,4 +116,26 @@ export const generateContent=async(req,res)=>{
         res. json({success: false, message: error.message})
     }
 }
+
+
+
+export const getDashboardBlogs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+
+    // Check if the logged-in user is admin (by email stored in .env)
+    if (userEmail === process.env.ADMIN_EMAIL) {
+      const blogs = await Blog.find().sort({ createdAt: -1 });
+      return res.json({ success: true, blogs });
+    }
+
+    // For regular user: show only their blogs
+    const blogs = await Blog.find({ author: userId }).sort({ createdAt: -1 });
+    res.json({ success: true, blogs });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to fetch blogs" });
+  }
+};
+
 

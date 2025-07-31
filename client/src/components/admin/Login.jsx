@@ -1,8 +1,14 @@
 import React, { useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+
+
+
+
 
 const Login = () => {
+  const navigate = useNavigate();
   const {axios,setToken}=useAppContext();
     const [email,setEmail]=useState('')
     const [password,setPassword]=useState('')
@@ -14,6 +20,8 @@ const Login = () => {
             setToken(data.token)
             localStorage.setItem('token',data.token)
             axios.defaults.headers.common['Authorization']=data.token;
+            localStorage.setItem('userName', data.user.name)
+            navigate('/')
           }
           else{
             toast.error(data.message)
@@ -48,6 +56,9 @@ const Login = () => {
                 </div>
                 <button type="submit" className='w-full py-3 font-medium bg-primary text-white rounded cursor-pointer hover:bg-primary/90
                     transition-all' > Login </button>
+                    <div className="p-5">
+                      Don't Have Account ? <button className="text-blue-700 cursor-pointer" onClick={() => navigate("/admin/register")}>  Sign Up</button>
+                    </div>
           </form>
         </div>
       </div>
