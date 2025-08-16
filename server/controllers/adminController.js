@@ -130,15 +130,32 @@ export const getAllBlogsAdmin = async (req, res) => {
   }
 }
 
-export const getAllComments = async (req, res) =>{
-try {
-const comments = await Comment . find( { } ) . populate("blog") . sort ( {createdAt:
--1})
-res. json({success: true, comments} )
-} catch (error) {
-res. json({success: false, message: error . message} )
-}
-}
+export const getAllComments = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const userId = req.user.id;
+    const isAdmin = userEmail === process.env.ADMIN_EMAIL;
+
+    let comments;
+
+    if (isAdmin) {
+      // Admin -> get everything
+      comments = await Comment.find({}).populate("blog").sort({ createdAt: -1 });
+    } else {
+      // Normal user -> only get comments on their blogs
+      const userBlogs = await Blog.find({ author: userId }).select("_id");
+      const blogIds = userBlogs.map(b => b._id);
+
+      comments = await Comment.find({ blog: { $in: blogIds } })
+        .populate("blog")
+        .sort({ createdAt: -1 });
+    }
+
+    res.json({ success: true, comments });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
 
 // export const getDashboard = async (req, res) =>{
 // try {
@@ -191,8 +208,9 @@ export const getDashboard = async (req, res) => {
     const recentBlogs = await Blog.find(filter).sort({ createdAt: -1 }).limit(5);
     const blogsCount = await Blog.countDocuments(filter);
     const draftsCount = await Blog.countDocuments({ ...filter, isPublished: false });
-    const commentsCount = await Comment.countDocuments({ user: userId });
-
+    const userBlogs = await Blog.find({ author: userId }).select("_id");
+    const blogIds = userBlogs.map(b => b._id);
+    const commentsCount = await Comment.countDocuments({ blog: { $in: blogIds } });
     res.json({
       success: true,
       dashboardData: {

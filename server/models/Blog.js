@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Comment from "./Comment.js";
 
 const blogSchema = new mongoose.Schema(
   {
@@ -16,5 +17,10 @@ const blogSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+blogSchema.pre("findOneAndDelete", async function (next) {
+  const blogId = this.getQuery()["_id"]; // blog being deleted
+  await Comment.deleteMany({ blog: blogId }); // delete all its comments
+  next();
+});
 const Blog = mongoose.model("blog", blogSchema);
 export default Blog;
